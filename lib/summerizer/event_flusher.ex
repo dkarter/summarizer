@@ -7,33 +7,36 @@ defmodule Summerizer.EventFlusher do
   require Logger
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    GenServer.start_link(__MODULE__, opts)
   end
 
   # server callbacks -----------
   #
   @impl GenServer
   def init(opts) do
-    flush_interval = Keyword.fetch!(opts, :flush_interval)
+    state = %{
+      flush_interval: Keyword.fetch!(opts, :flush_interval),
+      partition: Keyword.fetch!(opts, :partition)
+    }
 
-    {:ok, flush_interval, {:continue, :schedule_next_run}}
+    {:ok, state, {:continue, :schedule_next_run}}
   end
 
   @impl GenServer
-  def handle_continue(:schedule_next_run, flush_interval) do
-    Process.send_after(self(), :perform_cron_work, flush_interval)
+  def handle_continue(:schedule_next_run, state) do
+    Process.send_after(self(), :perform_cron_work, state.flush_interval)
 
-    {:noreply, flush_interval}
+    {:noreply, state}
   end
 
   @impl GenServer
-  def handle_info(:perform_cron_work, flush_interval) do
-    write_data_to_db = EventCollector.flush_events()
+  def handle_info(:perform_cron_work, state) do
+    write_data_to_db = EventCollector.flush_events(state.partition)
 
     if map_size(write_data_to_db) != 0 do
-      Logger.info(write_data_to_db)
+      Logger.info("#{__MODULE__}:#{inspect(self())} - Flushed data: #{inspect(write_data_to_db)}")
     end
 
-    {:noreply, flush_interval, {:continue, :schedule_next_run}}
+    {:noreply, state, {:continue, :schedule_next_run}}
   end
 end

@@ -11,9 +11,26 @@ defmodule Summerizer.SummarizerSupervisor do
 
   @impl Supervisor
   def init(init_args) do
+    partitions = 3
+
     children = [
-      {EventCollector, init_args},
-      {EventFlusher, init_args}
+      {
+        PartitionSupervisor,
+        child_spec: EventCollector.child_spec(init_args),
+        name: EventCollectorPartitionSupervisor,
+        partitions: partitions
+      },
+      {
+        PartitionSupervisor,
+        # modify the options that are passed to the partitioned process to
+        # inject a partition number
+        child_spec: EventFlusher.child_spec(init_args),
+        name: EventFlusherPartitionSupervisor,
+        partitions: partitions,
+        with_arguments: fn [opts], partition ->
+          [Keyword.put(opts, :partition, partition)]
+        end
+      }
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
