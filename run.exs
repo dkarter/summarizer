@@ -3,7 +3,7 @@ alias Summerizer.EventFlusher
 alias Summerizer.SummarizerSupervisor
 alias Summerizer.User
 
-SummarizerSupervisor.start_link(flush_interval: 1_000)
+# SummarizerSupervisor.start_link(flush_interval: 1_000)
 
 test_users = [
   %User{id: "1", name: "MegaCorp", plan: :enterprise},

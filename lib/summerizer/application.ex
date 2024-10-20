@@ -8,8 +8,7 @@ defmodule Summerizer.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Summerizer.Worker.start_link(arg)
-      # {Summerizer.Worker, arg}
+      {Summerizer.SummarizerSupervisor, flush_interval: 1_000}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
